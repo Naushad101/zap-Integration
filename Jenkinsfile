@@ -77,32 +77,38 @@ pipeline {
     }
 
     stage('Run ZAP Scan') {
-      steps {
-        script {
-          def targetUrl = params.TARGET_URL
-          def scanType = params.SCAN_TYPE
-          def reportName = "zap_report.html"
+        steps {
+            script {
+            def targetUrl = params.TARGET_URL
+            def scanType = params.SCAN_TYPE
+            def reportName = "zap_report_${scanType}.html"
 
-          if (scanType == 'passive') {
-            sh """
-            docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
-              zap-baseline.py -t ${targetUrl} -r ${reportName}
-            """
-          } else if (scanType == 'active') {
-            sh """
-            docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
-              zap-full-scan.py -t ${targetUrl} -r ${reportName}
-            """
-          } else {
-            error "Invalid SCAN_TYPE: ${scanType}. Use 'active' or 'passive'."
-          }
+            sh 'mkdir -p zap-reports && chmod 777 zap-reports'
+
+            if (scanType == 'passive') {
+                sh """
+                    docker run --rm --network=jenkins-network -u root \
+                    -v \$(pwd)/zap-reports:/zap/wrk \
+                    -t ghcr.io/zaproxy/zaproxy:stable \
+                    zap-baseline.py -t ${targetUrl} -r ${reportName} --autooff
+                """
+            } else if (scanType == 'active') {
+                sh """
+                    docker run --rm --network=jenkins-network -u root \
+                    -v \$(pwd)/zap-reports:/zap/wrk \
+                    -t ghcr.io/zaproxy/zaproxy:stable \
+                    zap-full-scan.py -t ${targetUrl} -r ${reportName} --autooff
+                """
+            } else {
+                error "Invalid SCAN_TYPE: ${scanType}. Use 'active' or 'passive'."
+            }
+            }
         }
-      }
     }
 
     stage('Archive Reports') {
       steps {
-        archiveArtifacts artifacts: 'zap_report.html', allowEmptyArchive: true
+        archiveArtifacts artifacts: 'zap-reports/zap_report_*.html', allowEmptyArchive: true
       }
     }
   }
