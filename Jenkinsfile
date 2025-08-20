@@ -106,7 +106,7 @@ pipeline {
 
     stage('Archive Reports') {
         steps {
-            archiveArtifacts artifacts: 'zap_report_${scanType}.html', allowEmptyArchive: false
+            archiveArtifacts artifacts: 'zap-reports/zap_report_*.html', allowEmptyArchive: false
         }
     }
   }
