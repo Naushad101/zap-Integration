@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - jenkins-network
+    container_name: spring-boot-hello-world
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: zap
+    command: >
+      zap.sh -daemon -host 0.0.0.0 -port 8090 
+      -config api.disablekey=true 
+      -config api.addrs.addr.name=.* 
+      -config api.addrs.addr.regex=true
+      -config log.level=DEBUG
+      -config log.file=/zap/wrk/zap.log
+      -config scanner.strength=MEDIUM
+      -config spider.maxDepth=5
+      -config spider.maxChildren=10
+      -config connection.timeoutInSecs=60
+      -addonupdate
+    ports:
+      - "8090:8090"
+    networks:
+      - jenkins-network
+    volumes:
+      - ./zap-reports:/zap/wrk/:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      - ZAP_LOG_LEVEL=INFO
+      
+networks:
+  jenkins-network:
+    driver: bridge
