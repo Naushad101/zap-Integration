@@ -32,7 +32,7 @@ pipeline {
 
     stage('Start Services') {
       steps {
-        sh 'docker-compose -f docker-compose-app.yaml up -d spring-boot-app zap'
+        sh 'docker-compose -f docker-compose.yaml up -d spring-boot-app zap'
       }
     }
 
