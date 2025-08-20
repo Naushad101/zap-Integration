@@ -4,6 +4,12 @@ pipeline {
   environment {
     GIT_REPO_URL    = 'https://github.com/Naushad101/zap-Integration.git'
     DOCKER_USERNAME = 'Naushad101'
+
+    // Global scan variables
+    TARGET_URL = "${params.TARGET_URL}"
+    SCAN_TYPE  = "${params.SCAN_TYPE}"
+    REPORT_DIR = "zap-reports"
+    REPORT_NAME = "zap_report_${params.SCAN_TYPE}.html"
   }
 
   parameters {
@@ -31,26 +37,26 @@ pipeline {
     }
 
     stage('Set Permissions & Verify Tools') {
-            steps {
-                sh 'chmod +x ./gradlew'
-                sh 'java -version'
-            }
-        }
+      steps {
+        sh 'chmod +x ./gradlew'
+        sh 'java -version'
+      }
+    }
 
     stage('Build Backend') {
-        steps {
-            sh './gradlew clean build -x test'
+      steps {
+        sh './gradlew clean build -x test'
+      }
+      post {
+        success {
+          archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
         }
-        post {
-            success {
-                archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-            }
-        }
+      }
     }
 
     stage('Start Services') {
       steps {
-        sh 'docker-compose -f docker-compose.yaml up -d spring-boot-app zap'
+        sh 'docker-compose -f docker-compose.yaml up -d'
       }
     }
 
@@ -77,44 +83,40 @@ pipeline {
     }
 
     stage('Run ZAP Scan') {
-        steps {
-            script {
-                def targetUrl = params.TARGET_URL
-                def scanType = params.SCAN_TYPE
-                def reportName = "zap_report_${scanType}.html"
+      steps {
+        sh "mkdir -p ${env.REPORT_DIR} && chmod 777 ${env.REPORT_DIR}"
 
-                sh 'mkdir -p zap-reports && chmod 777 zap-reports'
-
-                if (scanType == 'passive') {
-                    sh """
-                        docker run --rm --network=jenkins-network -u root \
-                        -v \$(pwd)/zap-reports:/zap/wrk \
-                        -t ghcr.io/zaproxy/zaproxy:stable \
-                        zap-baseline.py -t ${targetUrl} -r ${reportName} --autooff
-                    """
-                } else if (scanType == 'active') {
-                    sh """
-                        docker run --rm --network=jenkins-network -u root \
-                        -v \$(pwd)/zap-reports:/zap/wrk \
-                        -t ghcr.io/zaproxy/zaproxy:stable \
-                        zap-full-scan.py -t ${targetUrl} -r ${reportName}
-                    """
-                }
-            }
+        script {
+          if (env.SCAN_TYPE == 'passive') {
+            sh """
+              docker run --rm --network=jenkins-network -u root \
+              -v \$(pwd)/${env.REPORT_DIR}:/zap/wrk \
+              -t ghcr.io/zaproxy/zaproxy:stable \
+              zap-baseline.py -t ${env.TARGET_URL} -r ${env.REPORT_NAME} --autooff
+            """
+          } else if (env.SCAN_TYPE == 'active') {
+            sh """
+              docker run --rm --network=jenkins-network -u root \
+              -v \$(pwd)/${env.REPORT_DIR}:/zap/wrk \
+              -t ghcr.io/zaproxy/zaproxy:stable \
+              zap-full-scan.py -t ${env.TARGET_URL} -r ${env.REPORT_NAME}
+            """
+          }
         }
+      }
     }
 
     stage('Archive Reports') {
-        steps {
-            archiveArtifacts artifacts: 'zap-reports/zap_report_*.html', allowEmptyArchive: false
-        }
+      steps {
+        archiveArtifacts artifacts: "${env.REPORT_DIR}/${env.REPORT_NAME}", allowEmptyArchive: false
+      }
     }
   }
 
   post {
     always {
       echo 'Cleaning up...'
-      //sh 'docker-compose -f docker-compose.yaml down'
+      sh 'docker-compose -f docker-compose.yaml down'
     }
   }
 }
