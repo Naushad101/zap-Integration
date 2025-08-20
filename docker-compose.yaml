@@ -42,3 +42,6 @@ services:
 networks:
   jenkins-network:
     external: true
+
+volumes:
+  zap-reports: {}
