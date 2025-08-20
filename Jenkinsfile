@@ -1,24 +1,32 @@
 pipeline {
   agent any
 
+  environment {
+    GIT_REPO_URL    = 'https://github.com/Naushad101/zap-Integration.git'
+    DOCKER_USERNAME = 'Naushad101'
+  }
+
   parameters {
     choice(
-        name: 'SCAN_TYPE', 
-        choices: ['passive', 'active'], 
-        description: 'Choose scan type'
+      name: 'SCAN_TYPE',
+      choices: ['passive', 'active'],
+      description: 'Choose scan type'
     )
     string(
-        name: 'TARGET_URL', 
-        defaultValue: 'http://spring-boot-hello-world:8081', 
-        description: 'Target URL to scan'
+      name: 'TARGET_URL',
+      defaultValue: 'http://spring-boot-hello-world:8081',
+      description: 'Target URL to scan'
     )
   }
 
   stages {
-    stage('Print Parameters') {
+
+    stage('Checkout') {
       steps {
-        echo "Scan type: ${params.SCAN_TYPE}"
-        echo "Target URL: ${params.TARGET_URL}"
+        git credentialsId: 'github-creads',
+            url: env.GIT_REPO_URL,
+            branch: 'main'
+        sh 'git branch'
       }
     }
 
@@ -51,41 +59,28 @@ pipeline {
     }
 
     stage('Run ZAP Scan') {
-        steps {
-            script {
-            def targetUrl = params.TARGET_URL
-            def scanType = params.SCAN_TYPE
-            def reportName = "zap_report.html"
+      steps {
+        script {
+          def targetUrl = params.TARGET_URL
+          def scanType = params.SCAN_TYPE
+          def reportName = "zap_report.html"
 
-            if (scanType == 'passive') {
-                sh """
-                docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
-                    zap-baseline.py -t ${targetUrl} -r ${reportName}
-                """
-            } else if (scanType == 'active') {
-                sh """
-                docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
-                    zap-full-scan.py -t ${targetUrl} -r ${reportName}
-                """
-            } else {
-                error "Invalid SCAN_TYPE: ${scanType}. Use 'active' or 'passive'."
-            }
-            }
+          if (scanType == 'passive') {
+            sh """
+            docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
+              zap-baseline.py -t ${targetUrl} -r ${reportName}
+            """
+          } else if (scanType == 'active') {
+            sh """
+            docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t ghcr.io/zaproxy/zaproxy:stable \
+              zap-full-scan.py -t ${targetUrl} -r ${reportName}
+            """
+          } else {
+            error "Invalid SCAN_TYPE: ${scanType}. Use 'active' or 'passive'."
+          }
         }
+      }
     }
-
-    // stage('Run ZAP Scan') {
-    //   steps {
-    //     script {
-    //       def scanScript = './zap.sh'
-    //       def targetUrl = params.TARGET_URL
-    //       def scanType = params.SCAN_TYPE
-
-    //       sh "chmod +x ${scanScript}"
-    //       sh "${scanScript} ${targetUrl} ${scanType}"
-    //     }
-    //   }
-    // }
 
     stage('Archive Reports') {
       steps {
