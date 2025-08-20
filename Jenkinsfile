@@ -39,9 +39,7 @@ pipeline {
 
     stage('Build Backend') {
         steps {
-            dir('backend') {
-                sh '../gradlew clean build -x test'
-            }
+            sh './gradlew clean build -x test'
         }
         post {
             success {
