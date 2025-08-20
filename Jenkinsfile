@@ -61,7 +61,7 @@ pipeline {
           def count = 0
           def zapReady = false
           while (count < maxRetries && !zapReady) {
-            def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:8090", returnStdout: true).trim()
+            def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://zap:8090", returnStdout: true).trim()
             if (status == '200') {
               zapReady = true
             } else {
@@ -110,7 +110,7 @@ pipeline {
   post {
     always {
       echo 'Cleaning up...'
-      sh 'docker-compose -f docker-compose-app.yaml down'
+      sh 'docker-compose -f docker-compose.yaml down'
     }
   }
 }
