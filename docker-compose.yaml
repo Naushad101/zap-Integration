@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   spring-boot-app:
     build:
@@ -31,6 +30,7 @@ services:
       - jenkins-network
     volumes:
       - ./zap-reports:/zap/wrk/:rw
+      - ./zap-home:/home/zap:rw
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090"]
       interval: 30s
@@ -42,4 +42,4 @@ services:
       
 networks:
   jenkins-network:
-    driver: bridge
+    external: true
