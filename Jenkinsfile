@@ -90,14 +90,14 @@ pipeline {
                         docker run --rm --network=jenkins-network -u root \
                         -v \$(pwd)/zap-reports:/zap/wrk \
                         -t ghcr.io/zaproxy/zaproxy:stable \
-                        zap-baseline.py -t ${targetUrl} -r /zap/wrk/${reportName} --autooff
+                        zap-baseline.py -t ${targetUrl} -r ${reportName} --autooff
                     """
                 } else if (scanType == 'active') {
                     sh """
                         docker run --rm --network=jenkins-network -u root \
                         -v \$(pwd)/zap-reports:/zap/wrk \
                         -t ghcr.io/zaproxy/zaproxy:stable \
-                        zap-full-scan.py -t ${targetUrl} -r /zap/wrk/${reportName}
+                        zap-full-scan.py -t ${targetUrl} -r ${reportName}
                     """
                 }
             }
@@ -106,7 +106,7 @@ pipeline {
 
     stage('Archive Reports') {
         steps {
-            archiveArtifacts artifacts: 'zap-reports/zap_report_*.html', allowEmptyArchive: false
+            archiveArtifacts artifacts: 'zap_report_${scanType}.html', allowEmptyArchive: false
         }
     }
   }
