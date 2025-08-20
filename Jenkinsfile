@@ -116,7 +116,7 @@ pipeline {
   post {
     always {
       echo 'Cleaning up...'
-      sh 'docker-compose -f docker-compose.yaml down'
+      //sh 'docker-compose -f docker-compose.yaml down'
     }
   }
 }

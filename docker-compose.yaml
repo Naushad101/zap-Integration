@@ -41,6 +41,7 @@ services:
       
 networks:
   jenkins-network:
+    driver: bridge
     external: true
 
 volumes:
