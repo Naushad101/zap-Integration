@@ -30,6 +30,26 @@ pipeline {
       }
     }
 
+    stage('Set Permissions & Verify Tools') {
+            steps {
+                sh 'chmod +x ./gradlew'
+                sh 'java -version'
+            }
+        }
+
+    stage('Build Backend') {
+        steps {
+            dir('backend') {
+                sh '../gradlew clean build -x test'
+            }
+        }
+        post {
+            success {
+                archiveArtifacts artifacts: 'zap-Integration/build/libs/*.jar', fingerprint: true
+            }
+        }
+    }
+
     stage('Start Services') {
       steps {
         sh 'docker-compose -f docker-compose.yaml up -d spring-boot-app zap'
