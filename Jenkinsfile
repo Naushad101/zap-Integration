@@ -97,7 +97,7 @@ pipeline {
                         docker run --rm --network=jenkins-network -u root \
                         -v \$(pwd)/zap-reports:/zap/wrk \
                         -t ghcr.io/zaproxy/zaproxy:stable \
-                        zap-full-scan.py -t ${targetUrl} -r /zap/wrk/${reportName} --autooff
+                        zap-full-scan.py -t ${targetUrl} -r /zap/wrk/${reportName}
                     """
                 }
             }
