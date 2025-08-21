@@ -4,12 +4,13 @@ pipeline {
   environment {
     GIT_REPO_URL    = 'https://github.com/Naushad101/zap-Integration.git'
     DOCKER_USERNAME = 'Naushad101'
-    REPORT_NAME     = "zap_security_report.html"
-    TARGET_URL      = "http://spring-boot-hello-world:8081"
-    REPORT_DIR      = "zap_reports"
+
+    REPORTS_DIR     = "zap_reports"
+    REPORT_NAME     = "security-report.html"
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         git credentialsId: 'github-creads',
@@ -22,6 +23,7 @@ pipeline {
     stage('Set Permissions & Verify Tools') {
       steps {
         sh 'chmod +x ./gradlew'
+        sh 'chmod +x ./zap_scan.sh'
         sh 'java -version'
       }
     }
@@ -39,61 +41,19 @@ pipeline {
 
     stage('Start Services') {
       steps {
-        sh 'docker-compose -f docker-compose.yaml up -d spring-boot-app zap'
+        sh 'docker-compose -f docker-compose.yaml up -d'
       }
     }
 
-    stage('Wait for ZAP') {
+    stage('Run ZAP Security Scan') {
       steps {
-        script {
-          def maxRetries = 15
-          def count = 0
-          def zapReady = false
-
-          while (count < maxRetries && !zapReady) {
-            def response = sh(
-              script: "curl -s http://zap:8090/JSON/core/view/version/",
-              returnStdout: true
-            ).trim()
-
-            if (response && response.contains("version")) {
-              zapReady = true
-              echo "✅ ZAP is ready! Version: ${response}"
-            } else {
-              count++
-              echo "⏳ Waiting for ZAP to be ready... Attempt ${count}/${maxRetries}"
-              sleep(time: 10, unit: 'SECONDS')
-            }
-          }
-
-          if (!zapReady) {
-            error '❌ ZAP did not become ready in time!'
-          }
-        }
+        sh "./zap_scan.sh"  
       }
     }
 
-    stage('Run ZAP Active Scan') {
+    stage('Archive Reports') {
       steps {
-        script {
-          sh "mkdir -p ${env.REPORT_DIR} && chmod 777 ${env.REPORT_DIR}"
-
-          try {
-            sh """
-              docker exec -u root zap \
-              zap-full-scan.py -t ${env.TARGET_URL} -r /zap/wrk/${env.REPORT_NAME}
-            """
-          } catch (Exception e) {
-            currentBuild.result = 'UNSTABLE'
-            echo "⚠️ ZAP scan failed: ${e.message}"
-          }
-        }
-      }
-      post {
-        always {
-          echo "Archiving ZAP reports..."
-          archiveArtifacts artifacts: "${env.REPORT_DIR}/${env.REPORT_NAME}", allowEmptyArchive: true
-        }
+        archiveArtifacts artifacts: "${env.REPORTS_DIR}/*", allowEmptyArchive: false
       }
     }
   }
@@ -101,8 +61,7 @@ pipeline {
   post {
     always {
       echo 'Cleaning up...'
-      // Uncomment if you want services down after pipeline
-      // sh 'docker-compose -f docker-compose.yaml down'
+      //sh 'docker-compose -f docker-compose.yaml down'
     }
   }
 }
