@@ -84,4 +84,9 @@ echo "=== Scan completed successfully! ==="
 echo "Reports available in: $REPORTS_DIR"
 
 # Keep container running (optional)
-tail -f /dev/null
+# tail -f /dev/null
+
+# --- Shutdown ZAP so script ends ---
+echo "Shutting down ZAP..."
+curl -s "$ZAP_URL/JSON/core/action/shutdown/"
+wait $ZAP_PID
