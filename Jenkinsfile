@@ -2,11 +2,14 @@ pipeline {
   agent any
 
   environment {
-    GIT_REPO_URL    = 'https://github.com/Naushad101/zap-Integration.git'
+    GIT_REPO_URL = 'https://github.com/Naushad101/zap-Integration.git'
     DOCKER_USERNAME = 'Naushad101'
 
-    REPORTS_DIR     = "zap_reports"
-    REPORT_NAME     = "security-report.html"
+    // Environment variables passed into zap_scan.sh
+    APP_URL     = "http://spring-boot-app:8081"
+    ZAP_URL     = "http://localhost:8090"
+    OPENAPI_URL = "http://spring-boot-app:8081/v3/api-docs"
+    REPORTS_DIR = "zap_reports"
   }
 
   stages {
@@ -41,14 +44,38 @@ pipeline {
 
     stage('Start Services') {
       steps {
-        sh 'docker-compose -f docker-compose.yaml up -d'
+        sh 'docker-compose -f docker-compose.yaml up -d spring-boot-app zap'
+      }
+    }
+
+    stage('Wait for ZAP Ready') {
+      steps {
+        script {
+          sh "sleep 60"
+          def maxRetries = 15
+          def count = 0
+          def zapReady = false
+          while (count < maxRetries && !zapReady) {
+            def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' ${env.ZAP_URL}", returnStdout: true).trim()
+            echo "ZAP check attempt ${count + 1}: HTTP $status"
+            if (status == '200') {
+              zapReady = true
+              echo "✅ ZAP is running and healthy"
+            } else {
+              count++
+              sleep(time: 10, unit: 'SECONDS')
+            }
+          }
+          if (!zapReady) {
+            error '❌ ZAP did not become ready in time!'
+          }
+        }
       }
     }
 
     stage('Run ZAP Security Scan') {
       steps {
-        sh "sleep 30"
-        sh "./zap_scan.sh"  
+        sh "./zap_scan.sh" 
       }
     }
 
@@ -62,7 +89,7 @@ pipeline {
   post {
     always {
       echo 'Cleaning up...'
-      //sh 'docker-compose -f docker-compose.yaml down'
+      // sh 'docker-compose -f docker-compose.yaml down'
     }
   }
 }
