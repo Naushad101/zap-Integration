@@ -87,6 +87,9 @@ echo "Informational Alerts: $INFO_ALERTS" >> "$REPORTS_DIR/scan-summary.txt"
 echo "=== Scan completed successfully! ==="
 echo "Reports available in: $REPORTS_DIR"
 
-# --- Shutdown ZAP so script ends cleanly ---
-echo "Shutting down ZAP..."
-curl -s "$ZAP_URL/JSON/core/action/shutdown/"
+# Keep container running (optional)
+# tail -f /dev/null
+
+# # --- Shutdown ZAP so script ends cleanly ---
+# echo "Shutting down ZAP..."
+# curl -s "$ZAP_URL/JSON/core/action/shutdown/"
