@@ -21,7 +21,7 @@ done
 echo "ZAP is ready!"
 
 # Wait for ZAP to start
-sleep 20
+sleep 30
 
 # Import OpenAPI specification
 echo "Importing OpenAPI specification..."
@@ -85,7 +85,7 @@ echo "Informational Alerts: $INFO_ALERTS" >> "$REPORTS_DIR/scan-summary.txt"
 
 echo "=== Scan completed successfully! ==="
 echo "Reports available in: $REPORTS_DIR"
-
+sleep 30
 # Keep container running (optional)
 # tail -f /dev/null
 
