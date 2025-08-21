@@ -6,7 +6,7 @@ pipeline {
     DOCKER_USERNAME = 'Naushad101'
 
     // Environment variables passed into zap_scan.sh
-    APP_URL     = "http://spring-boot-hello-world:8081"
+    APP_URL     = "http://spring-boot-app:8081"
     ZAP_URL     = "http://zap:8090"
     OPENAPI_URL = "http://spring-boot-app:8081/v3/api-docs"
     REPORTS_DIR = "zap_reports"

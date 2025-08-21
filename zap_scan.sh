@@ -90,6 +90,6 @@ echo "Reports available in: $REPORTS_DIR"
 # Keep container running (optional)
 # tail -f /dev/null
 
-# # --- Shutdown ZAP so script ends cleanly ---
-# echo "Shutting down ZAP..."
-# curl -s "$ZAP_URL/JSON/core/action/shutdown/"
+# --- Shutdown ZAP so script ends cleanly ---
+echo "Shutting down ZAP..."
+curl -s "$ZAP_URL/JSON/core/action/shutdown/"
