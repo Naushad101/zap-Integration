@@ -14,11 +14,14 @@ mkdir -p "$REPORTS_DIR"
 
 # Start ZAP daemon
 echo "Starting ZAP daemon..."
-zap.sh -daemon -host 0.0.0.0 -port 8090 -config api.disablekey=true &
-ZAP_PID=$!
+echo "Waiting for ZAP to be ready..."
+until curl -s ${ZAP_URL} || [ $? -eq 0 ]; do
+  sleep 5
+done
+echo "ZAP is ready!"
 
 # Wait for ZAP to start
-sleep 30
+sleep 20
 
 # Import OpenAPI specification
 echo "Importing OpenAPI specification..."
@@ -86,7 +89,6 @@ echo "Reports available in: $REPORTS_DIR"
 # Keep container running (optional)
 # tail -f /dev/null
 
-# --- Shutdown ZAP so script ends ---
+# --- Shutdown ZAP ---
 echo "Shutting down ZAP..."
 curl -s "$ZAP_URL/JSON/core/action/shutdown/"
-wait $ZAP_PID
