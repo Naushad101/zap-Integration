@@ -12,21 +12,22 @@ REPORTS_DIR="${REPORTS_DIR:-./zap_reports}"
 
 mkdir -p "$REPORTS_DIR"
 
-# Start ZAP daemon
-echo "Starting ZAP daemon..."
-echo "Waiting for ZAP to be ready..."
-until curl -s ${ZAP_URL} || [ $? -eq 0 ]; do
+# Wait for ZAP to be ready
+echo "Waiting for ZAP to be available at $ZAP_URL..."
+until curl -s -o /dev/null -w "%{http_code}" "$ZAP_URL" | grep -q "200"; do
   sleep 5
 done
-echo "ZAP is ready!"
 
-# Wait for ZAP to start
-sleep 30
+echo "ZAP is ready, starting scan..."
 
 # Import OpenAPI specification
 echo "Importing OpenAPI specification..."
 curl -s -X GET "$ZAP_URL/JSON/openapi/action/importUrl/?url=$OPENAPI_URL"
 sleep 5
+
+# Show all known URLs after import
+echo "=== URLs loaded into ZAP ==="
+curl -s "$ZAP_URL/JSON/core/view/urls/"
 
 # ---------------- Spider Scan ----------------
 echo "Starting spider scan..."
@@ -85,10 +86,7 @@ echo "Informational Alerts: $INFO_ALERTS" >> "$REPORTS_DIR/scan-summary.txt"
 
 echo "=== Scan completed successfully! ==="
 echo "Reports available in: $REPORTS_DIR"
-sleep 30
-# Keep container running (optional)
-# tail -f /dev/null
 
-# --- Shutdown ZAP ---
+# --- Shutdown ZAP so script ends cleanly ---
 echo "Shutting down ZAP..."
 curl -s "$ZAP_URL/JSON/core/action/shutdown/"

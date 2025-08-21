@@ -52,7 +52,7 @@ pipeline {
       steps {
         script {
           sh "sleep 30"
-          def maxRetries = 15
+          def maxRetries = 10
           def count = 0
           def zapReady = false
           while (count < maxRetries && !zapReady) {
@@ -60,14 +60,14 @@ pipeline {
             echo "ZAP check attempt ${count + 1}: HTTP $status"
             if (status == '200') {
               zapReady = true
-              echo "✅ ZAP is running and healthy"
+              echo "ZAP is running and healthy"
             } else {
               count++
               sleep(time: 10, unit: 'SECONDS')
             }
           }
           if (!zapReady) {
-            error '❌ ZAP did not become ready in time!'
+            error 'ZAP did not become ready in time!'
           }
         }
       }
