@@ -47,6 +47,7 @@ pipeline {
 
     stage('Run ZAP Security Scan') {
       steps {
+        sh "sleep 30"
         sh "./zap_scan.sh"  
       }
     }
